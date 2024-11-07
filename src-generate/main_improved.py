@@ -11,11 +11,36 @@ import sys
 import matplotlib.pyplot as plt
 import time
 
+import json
+import generate
+import partition
+import sys
 
 if __name__ == "__main__":
 
+    #m = int(input("number of problem instances: "))
+    #sizePart = int(input("Size of the partition: "))
+    #minSizeSubpoly = int(input("Minimum size of each subpolygon: "))
+
+    # m = 1
+    # sizePart = 3
+    # minSizeSubpoly = 5
+
+    filename = sys.argv[1]
+    sizePart = int(sys.argv[2])
+    minSizeSubpoly = int(sys.argv[3])
+
+    #for j in range(m):
+
+        #if j != m-1:
+        #    continue
+
+    f = open("./" + filename, "r")
+
+    #f = open("test" + generate.twoDigit(j) + ".txt", "r")
+
     # take input from test.txt
-    f = open("test.txt", "r")
+    # f = open("test.txt", "r")
 
     # start timer
     start = time.time()
@@ -59,7 +84,7 @@ if __name__ == "__main__":
             if e.start == edge.start and e.end == edge.end:
                 containsE = True
 
-        # proceed only if edge is in polygon, point is in interior, and it is a 
+        # proceed only if edge is in polygon, point is in interior, and it is a
         # valid addition to the polygon
         if containsE and point in points and e.valid(polygon, point):
             # get index of the edge
@@ -92,12 +117,121 @@ if __name__ == "__main__":
     print("------------------------------------------------")
     print()
 
+    # plt.figure(figsize=(6, 8))
+
     # plot the polygon
-    pset = polygon.vertices
-    pset.append(pset[0])
-    xs, ys = zip(*pset)
-    plt.plot(xs, ys)
+    originalPset = polygon.vertices
+
+    psets, diagonals = partition.partition(originalPset, sizePart, minSizeSubpoly)
+
+    psets2, _ = partition.partition(originalPset)
+    # f = open("polygon" + generate.twoDigit(j) + ".txt", "w")
+    #
+    #
+    # for _ in pset:
+    #     first, second = _
+    #     f.write(first + ' ' + second)
+
+    numPlotsPerAxis = 1
+    while numPlotsPerAxis**2 < len(psets)+1:
+        numPlotsPerAxis += 1
+
+    f, axes = plt.subplots(numPlotsPerAxis, numPlotsPerAxis, sharex = True, sharey = True)
+
+    f.set_figheight(15)
+    f.set_figwidth(15)
+
+    # plt.sharex()
+
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+
+    oriPoly = psets2[0]
+
+    oriPoly.append(oriPoly[0])
+    # oriPolyVers = []
+
+    # list of vertices
+    versL = []
+
+    for p in oriPoly:
+        versL.append([p.x, p.y])
+
+    xs, ys = zip(*versL)
+    axes[0,0].plot(xs, ys)
+
+    # diagonalVers = []
+    for d in diagonals:
+        dPoints = []
+        for p in d:
+            dPoints.append([p.x, p.y])
+
+        # diagonalVers
+        xs, ys = zip(*dPoints)
+        axes[0,0].plot(xs, ys)
+        # for d in diagonals:
+
+    for idPset in range(len(psets)):
+        pset = psets[idPset]
+        pset.append(pset[0])
+
+        psetVers = []
+        for p in pset:
+            psetVers.append([p.x, p.y])
+
+        xs, ys = zip(*psetVers)
+        axes[(idPset+1) // numPlotsPerAxis,(idPset+1) % numPlotsPerAxis].plot(xs, ys)
+
+    data = {}
+    data['id'] = "random" # + generate.twoDigit(j)
+
+    data['container'] = {}
+    data['container']['x'] = []
+    data['container']['y'] = []
+
+    for i in range(len(versL)-1):
+        data['container']['x'].append(versL[i][0])
+        data['container']['y'].append(versL[i][1])
+
+    data['items'] = []
+
+    # each subpolygon in the partition
+    for i in range(len(psets)):
+        dic = {}
+        # dic['x'] = []
+        # dic['y'] = []
+
+        dic['id'] = i
+
+        pset = psets[i]
+
+        psetVers = []
+        for p in pset:
+            psetVers.append([p.x, p.y])
+
+        del psetVers[-1]
+
+        xs, ys = zip(*psetVers)
+
+        dic['x'] = xs
+        dic['y'] = ys
+
+        data['items'].append(dic)
+
+
+    # filePath = "./data" + generate.twoDigit(j) + ".json"
+    filePath = filename + ".json"
+
+    with open(filePath, 'w') as outfile:
+        json.dump(data, outfile, indent=2)
+
+    #mng = plt.get_current_fig_manager()
+    #mng.window.state("zoomed")
+
+
     plt.show()
 
     # close test.txt file
-    f.close()
+    # f.close()
+
+# plt.show()
